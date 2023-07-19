@@ -1,0 +1,12 @@
+{
+  "createSchemaAndTypes": {
+    "graphqlUrl": "http://localhost:8080/v1/graphql",
+    "headers": {
+      "x-hasura-admin-secret": "myadminsecretkey"
+    }
+  },
+  "exportPath": "./src/app/types/hasura/entities/",
+  "schemaPath": "./src/app/types/hasura/schema.json",
+  "typesConfigPath": "./src/app/types/hasura/graphql.ts",
+  "templateName": "template-ts-3.8-abstract.hbs"
+}

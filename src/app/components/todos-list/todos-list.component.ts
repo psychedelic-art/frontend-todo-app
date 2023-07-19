@@ -1,25 +1,25 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
-import { transferArrayItem } from '@angular/cdk/drag-drop'
+import { transferArrayItem } from '@angular/cdk/drag-drop';
 
 @Component({
   selector: 'app-todos-list',
   templateUrl: './todos-list.component.html',
-  styleUrls: ['./todos-list.component.css']
+  styleUrls: ['./todos-list.component.css'],
 })
 export class TodosListComponent {
-  @Input() todosList = [{title: '', done: false, id: ''}]
-  
-  @Input() isDarkMode = true
+  @Input() todoList = [];
 
-  @Output() id = new EventEmitter<string>()
-  @Output() crossId = new EventEmitter<string>()
+  @Input() isDarkMode = true;
+
+  @Output() id = new EventEmitter<string>();
+  @Output() crossId = new EventEmitter<string>();
 
   addId(todoId: string) {
-    this.id.emit(todoId)
+    this.id.emit(todoId);
   }
 
   addCrossId(todoId: string) {
-    this.crossId.emit(todoId)
+    this.crossId.emit(todoId);
   }
 
   drop(event) {
@@ -28,6 +28,6 @@ export class TodosListComponent {
       event.container.data,
       event.previousIndex,
       event.currentIndex
-    )
+    );
   }
-} 
+}

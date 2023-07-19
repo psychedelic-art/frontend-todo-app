@@ -1,0 +1,54 @@
+version: '3.8'
+services:
+
+  graphql-engine:
+    image: hasura/graphql-engine:v2.26.0
+    restart: always
+    environment:
+      HASURA_GRAPHQL_DATABASE_URL: postgres://postgres:123456@postgres-example-todo:5440/todo
+      HASURA_GRAPHQL_METADATA_DATABASE_URL: postgres://postgres:123456@postgres-hasura-db:5442/postgres
+      HASURA_GRAPHQL_ENABLE_CONSOLE: "true" # set to "false" to disable console
+      HASURA_GRAPHQL_DEV_MODE: "true"
+      HASURA_GRAPHQL_ENABLED_LOG_TYPES: startup, http-log, webhook-log, websocket-log, query-log
+      HASURA_GRAPHQL_ADMIN_SECRET: myadminsecretkey
+      HASURA_GRAPHQL_METADATA_INCLUDE_ALL_TABLES": "true"
+    depends_on:
+      - postgres-example-todo
+    ports:
+      - 8080:8080
+    networks:
+      - nesjs-network
+
+  postgres-example-todo:
+    image: postgres:15
+    restart: always
+    networks:
+      - nesjs-network
+    environment:
+      POSTGRES_DB: todo
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123456
+      TZ: 'UTC'
+    volumes:
+      - ./pg-data/utodo:/var/lib/postgresql/todo/data #./pg-data/up-nodes:/var/lib/postgresql/up-nodes/data
+    ports:
+      - 5440:5440
+    command: -p 5440
+
+  postgres-hasura-db:
+    image: postgres:15
+    restart: always
+    volumes:
+      - ./pg-data/todo-hasura:/var/lib/postgresql/todo-hasura/data
+    networks:
+      - nesjs-network
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123456
+    ports:
+      - 5442:5442
+    command: -p 5442
+
+networks:
+  nesjs-network:
+     external: true

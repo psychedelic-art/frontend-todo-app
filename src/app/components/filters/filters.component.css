@@ -1,0 +1,40 @@
+.filters-div {
+  display: flex;
+  justify-content: space-between;
+  padding: 20px;
+  color: gray;
+  font-size: 15px;
+}
+
+.filters {
+  display: flex;
+  gap: 20px;
+}
+
+.active {
+  color: var(--Primary-Bright-Blue);
+}
+
+span:hover {
+  cursor: pointer;
+}
+
+.itemLeft {
+  cursor: default !important;
+}
+
+@media all and (max-width: 900px) {
+  .filters-div span {
+    font-size: 11px;
+  }
+
+  .filters {
+    gap: 7px;
+  }
+}
+
+@media all and (max-width: 750px) {
+  .filters span {
+    font-size: 9px;
+  }
+}

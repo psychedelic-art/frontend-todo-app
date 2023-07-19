@@ -1,79 +1,191 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, Inject, OnInit } from '@angular/core';
 import { AppService } from './app.service';
+import { Apollo, gql } from 'apollo-angular';
+import { TodoRepository } from 'src/app/types/hasura/entities/repositories/todo';
+import { Mutation_Root, Todo } from './types/hasura/graphql';
+
+interface GetMyTodosResponse {
+  todo: Todo[];
+}
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
-  styleUrls: ['./app.component.css']
+  styleUrls: ['./app.component.css'],
 })
+export class AppComponent implements OnInit {
+  isDarkMode = true;
+  allTodos: Todo[] = [];
 
-export class AppComponent implements OnInit{
-  isDarkMode = true
-  
-  todosList = [
-    {title: 'Housework', done: false },
-    {title:  'Go to the gym', done: false },
-    {title: 'Programming assignment', done: false }, 
-  ].map((todo) => ({...todo, id: this.appService.generateRandomId()}))
+  filter: string = 'All';
+  loading = true;
 
-  allTodos: any
-  activeTodos: any
-  completedTodos: any
-
-  constructor (private appService: AppService) {}
+  constructor(
+    private apollo: Apollo,
+    @Inject('TODO_REPOSITORY')
+    private repository: TodoRepository
+  ) {}
 
   ngOnInit(): void {
-    this.allTodos = this.todosList
+    this.apollo
+      .watchQuery<GetMyTodosResponse>({
+        query: gql(
+          this.repository.find({
+            select: {
+              uuid: true,
+              title: true,
+              created_at: true,
+              is_completed: true,
+            },
+          })
+        ),
+      })
+      .valueChanges.subscribe(({ data, loading }) => {
+        this.loading = loading;
+        this.allTodos = data.todo.map(
+          ({ __typename, ...todoRest }) => todoRest
+        );
+        this.onClickFilter('All');
+      });
+  }
+
+  get todoList(): Todo[] {
+    if (this.filter === 'Active') {
+      return this.allTodos.filter((item) => !item.is_completed);
+    } else if (this.filter === 'Completed') {
+      return this.allTodos.filter((item) => item.is_completed);
+    } else {
+      return this.allTodos;
+    }
   }
 
   onChangeMode() {
-    console.log('changed')
     if (this.isDarkMode) {
-      this.isDarkMode = !this.isDarkMode
-    }else {
-     this.isDarkMode = true
+      this.isDarkMode = !this.isDarkMode;
+    } else {
+      this.isDarkMode = true;
     }
   }
 
   addTodo(value: string) {
-    if(value !== '') {
-      this.todosList.push({title: value, done: false, id: this.appService.generateRandomId()})
-    }
-    this.allTodos = this.todosList
-
+    this.apollo
+      .mutate<Pick<Mutation_Root, 'insert_todo'>>({
+        mutation: gql(
+          this.repository.upsert({
+            objects: [{ title: value }],
+            returning: {
+              uuid: true,
+              title: true,
+              created_at: true,
+              is_completed: false,
+            },
+          })
+        ),
+      })
+      .subscribe(({ data, loading }) => {
+        this.loading = loading;
+        this.allTodos.push(data.insert_todo.returning[0]);
+      });
   }
 
   changeTodoDone(todoId: string) {
-    this.todosList.map((todo) => {
-      if (todo.id === todoId) {
-        todo.done = !todo.done
-      }
-    })
+    this.apollo
+      .mutate<Pick<Mutation_Root, 'update_todo'>>({
+        mutation: gql(
+          this.repository.update({
+            set: {
+              is_completed: true,
+            },
+            where: {
+              uuid: {
+                _eq: '$uuid',
+              },
+            },
+            returning: {
+              uuid: true,
+              title: true,
+              created_at: true,
+              is_completed: true,
+            },
+            variables: {
+              uuid: 'uuid!',
+            },
+          })
+        ),
+        variables: {
+          uuid: todoId,
+        },
+      })
+      .subscribe(({ data, loading }) => {
+        this.loading = loading;
+        this.allTodos = this.allTodos.filter((todo) => todo.uuid !== todoId);
+        this.allTodos.push(data.update_todo.returning[0]);
+      });
   }
 
   clearDoneTodos() {
-    this.todosList = this.todosList.filter(item => !item.done)
-
-    this.allTodos = this.todosList
-  }
-
-  calcItemsLeft() {
-    return this.todosList.filter(item => !item.done).length
+    this.apollo
+      .mutate<Pick<Mutation_Root, 'delete_todo'>>({
+        mutation: gql(
+          this.repository.delete({
+            where: {
+              is_completed: {
+                _eq: true,
+              },
+            },
+            returning: {
+              uuid: true,
+              title: true,
+              created_at: true,
+              is_completed: true,
+            },
+          })
+        ),
+      })
+      .subscribe(({ data, loading }) => {
+        this.loading = loading;
+        this.allTodos = this.allTodos.filter((todo) =>
+          data.delete_todo.returning.find(
+            (deletedTodo) => deletedTodo.uuid === todo.uuid
+          )
+        );
+      });
   }
 
   onCrossDelete(todoid) {
-    this.todosList = this.todosList.filter(item => item.id !== todoid)
+    this.apollo
+      .mutate<Pick<Mutation_Root, 'delete_todo'>>({
+        mutation: gql(
+          this.repository.delete({
+            where: {
+              uuid: {
+                _eq: todoid,
+              },
+            },
+            returning: {
+              uuid: true,
+              title: true,
+              created_at: true,
+              is_completed: true,
+            },
+          })
+        ),
+      })
+      .subscribe(({ data, loading }) => {
+        this.loading = loading;
+        this.allTodos = this.allTodos.filter((todo) =>
+          data.delete_todo.returning.find(
+            (deletedTodo) => deletedTodo.uuid === todo.uuid
+          )
+        );
+      });
+  }
+
+  calcItemsLeft() {
+    return this.todoList.filter((item) => !item.is_completed).length;
   }
 
   onClickFilter(filterName) {
-    
-    if (filterName === 'Active') {
-      this.todosList = this.allTodos.filter(item => !item.done)
-    }else if (filterName === 'Completed') {
-      this.todosList = this.allTodos.filter(item => item.done)
-    }else [
-      this.todosList = this.allTodos
-    ]
+    this.filter = filterName;
   }
 }
-

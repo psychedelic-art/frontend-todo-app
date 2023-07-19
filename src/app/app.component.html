@@ -2,7 +2,7 @@
   <div class="img-block" [className]="isDarkMode ? 'img-block' : 'lightBg'" >
 
   </div>
-  
+
 </div>
 
 <div class="container">
@@ -14,15 +14,15 @@
   <main>
     <app-todo-input [isDarkMode]="isDarkMode" (inputEvent)="addTodo($event)"></app-todo-input>
 
-    <app-todos-list 
-      [todosList]="todosList" 
-      [isDarkMode]="isDarkMode" 
+    <app-todos-list
+      [todoList]="todoList"
+      [isDarkMode]="isDarkMode"
       (id)="changeTodoDone($event)"
       (crossId)="onCrossDelete($event)"
     >
-      <app-filters 
+      <app-filters
          (clearDoneTodos)="clearDoneTodos()"
-         [todosList]="todosList"
+         [todoList]="todoList"
          [itemsLeft]="calcItemsLeft()"
          (filActive)="onClickFilter($event)"
       ></app-filters>
