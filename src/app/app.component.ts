@@ -1,5 +1,4 @@
 import { Component, Inject, OnInit } from '@angular/core';
-import { AppService } from './app.service';
 import { Apollo, gql } from 'apollo-angular';
 import { TodoRepository } from 'src/app/types/hasura/entities/repositories/todo';
 import { Mutation_Root, Todo } from './types/hasura/graphql';
@@ -144,10 +143,11 @@ export class AppComponent implements OnInit {
       })
       .subscribe(({ data, loading }) => {
         this.loading = loading;
-        this.allTodos = this.allTodos.filter((todo) =>
-          data.delete_todo.returning.find(
-            (deletedTodo) => deletedTodo.uuid === todo.uuid
-          )
+        this.allTodos = this.allTodos.filter(
+          (todo) =>
+            data.delete_todo.returning.find(
+              (deletedTodo) => deletedTodo.uuid === todo.uuid
+            ) === undefined
         );
       });
   }
